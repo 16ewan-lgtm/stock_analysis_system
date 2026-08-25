@@ -28,3 +28,6 @@ data/portfolio_transactions.csv
 
 # Local portfolio and generated data
 data/
+
+# Local source backups
+core/*.backup-*

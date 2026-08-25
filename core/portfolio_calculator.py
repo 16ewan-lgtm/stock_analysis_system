@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
@@ -30,9 +31,48 @@ def load_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(file))
 
 
-def calculate_positions() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
-    portfolio = load_csv(PORTFOLIO_FILE)
-    transactions = load_csv(TRANSACTIONS_FILE)
+def parse_transaction_datetime(row: dict[str, str]) -> datetime:
+    date_text = (row.get("transaction_date") or "").strip()
+    created_text = (row.get("created_at") or "").strip()
+
+    parsed_date = None
+    for date_format in ("%Y-%m-%d", "%d/%m/%Y", "%Y/%m/%d"):
+        try:
+            parsed_date = datetime.strptime(date_text, date_format)
+            break
+        except ValueError:
+            continue
+
+    if parsed_date is None:
+        raise ValueError(
+            f"{row.get('transaction_id', '')} 的 transaction_date 格式無效："
+            f"{date_text}"
+        )
+
+    if created_text:
+        for created_format in (
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%dT%H:%M:%S",
+        ):
+            try:
+                created_date = datetime.strptime(created_text, created_format)
+                return parsed_date.replace(
+                    hour=created_date.hour,
+                    minute=created_date.minute,
+                    second=created_date.second,
+                )
+            except ValueError:
+                continue
+
+    return parsed_date
+
+
+def calculate_positions(
+    portfolio_path: Path = PORTFOLIO_FILE,
+    transactions_path: Path = TRANSACTIONS_FILE,
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    portfolio = load_csv(portfolio_path)
+    transactions = load_csv(transactions_path)
 
     if not portfolio:
         raise ValueError("portfolio.csv 沒有資料")
@@ -93,6 +133,11 @@ def calculate_positions() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
                 f"portfolio_transactions.csv 缺少欄位：{sorted(missing)}"
             )
 
+    transactions = sorted(
+        transactions,
+        key=parse_transaction_datetime,
+    )
+
     seen_ids = set()
     applied_transactions = []
 
@@ -146,6 +191,8 @@ def calculate_positions() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
         old_quantity = target["quantity"]
         old_cost = target["cost_basis"]
 
+        realized_pnl = Decimal("0")
+
         if action == "BUY":
             target["quantity"] = old_quantity + quantity
             target["cost_basis"] = (
@@ -164,12 +211,15 @@ def calculate_positions() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
                 else Decimal("0")
             )
 
+            sale_proceeds = price * quantity - fee - tax
+            allocated_cost = average_cost * quantity
+            realized_pnl = sale_proceeds - allocated_cost
+
             target["quantity"] = old_quantity - quantity
-            target["cost_basis"] = old_cost - average_cost * quantity
+            target["cost_basis"] = old_cost - allocated_cost
 
         if target["quantity"] == 0:
-            target["cost_basis"] = Decimal("0")
-            target["holding_status"] = "監控"
+            del positions[symbol]
         else:
             target["holding_status"] = "持有"
 
@@ -178,6 +228,7 @@ def calculate_positions() -> tuple[list[dict[str, str]], list[dict[str, str]]]:
             "symbol": symbol,
             "action": action,
             "quantity": str(quantity),
+            "realized_pnl": str(realized_pnl.quantize(Decimal("0.01"))),
         })
 
     result = []
@@ -210,6 +261,12 @@ if __name__ == "__main__":
 
     print(f"計算完成，持倉資料：{len(positions)} 筆")
     print(f"套用 CONFIRMED 交易：{len(transactions)} 筆")
+
+    realized_pnl = sum(
+        (Decimal(row["realized_pnl"]) for row in transactions),
+        Decimal("0"),
+    )
+    print(f"已實現損益：{realized_pnl.quantize(Decimal('0.01'))}")
 
     total_quantity = sum(int(row["quantity"]) for row in positions)
     total_cost = sum(
