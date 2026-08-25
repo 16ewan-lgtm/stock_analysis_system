@@ -13,3 +13,18 @@ logs/
 *.before_*
 *.working
 results/
+
+# Disabled and temporary scripts
+*.disabled
+*.shbac
+*.shbc
+
+# Timestamped backup files
+*.bak_*
+
+# Personal portfolio and transaction data
+data/portfolio.csv
+data/portfolio_transactions.csv
+
+# Local portfolio and generated data
+data/
