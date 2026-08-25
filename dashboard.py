@@ -84,7 +84,7 @@ if __name__ == '__main__':
     print("\n" + "="*70)
     print("🚀 股票分析儀表板已啟動")
     print("="*70)
-    print("\n📱 訪問地址: http://127.0.0.1:8000")
+    print("\n📱 訪問地址: http://127.0.0.1:8008")
     print("\n按 Ctrl+C 停止服務\n")
     
-    app.run(debug=True, port=8000, host='127.0.0.1')
+    app.run(debug=True, port=8008, host='127.0.0.1')
