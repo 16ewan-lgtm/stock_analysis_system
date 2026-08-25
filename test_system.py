@@ -47,8 +47,8 @@ def test_result_file():
         assert 0 <= result["risk_score"] <= 100
 
         assert result["data_status"]["technical"] == "available"
-        assert result["data_status"]["fundamental"] == "placeholder"
-        assert result["data_status"]["chips"] == "placeholder"
+        assert result["data_status"]["fundamental"] == "available"
+        assert result["data_status"]["chips"] == "available"
 
 
 def test_stock_coverage():
