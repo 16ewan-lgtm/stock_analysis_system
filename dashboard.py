@@ -6,12 +6,14 @@ from flask import Flask, render_template, jsonify, request
 import json
 import os
 from datetime import datetime
+from decimal import Decimal
 import sys
 import pandas as pd
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from core.analysis_engine import UnifiedAnalysisEngine
+from core.portfolio_calculator import calculate_positions
 from config.settings import STOCK_LIST
 
 app = Flask(__name__, template_folder='templates')
@@ -44,6 +46,48 @@ def run_analysis():
         return jsonify({'status': 'success', 'results': results})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+@app.route('/api/portfolio')
+def get_portfolio():
+    """取得投資組合持倉與已實現損益。"""
+    try:
+        positions, transactions = calculate_positions()
+
+        realized_pnl = sum(
+            (
+                Decimal(row.get("realized_pnl", "0"))
+                for row in transactions
+            ),
+            Decimal("0"),
+        ).quantize(Decimal("0.01"))
+
+        holding_count = sum(
+            1
+            for position in positions
+            if Decimal(str(position.get("quantity", "0"))) > 0
+        )
+
+        return jsonify({
+            "status": "success",
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+            "summary": {
+                "position_count": len(positions),
+                "holding_count": holding_count,
+                "transaction_count": len(transactions),
+                "realized_pnl": str(realized_pnl),
+                "unrealized_pnl": None,
+                "total_pnl": None,
+                "unrealized_pnl_status": "not_available",
+            },
+            "positions": positions,
+            "transactions": transactions,
+        })
+    except Exception as e:
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+        }), 500
 
 @app.route('/api/stats')
 def get_stats():
