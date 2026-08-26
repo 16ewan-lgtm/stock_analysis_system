@@ -682,6 +682,137 @@
             `;
         }
 
+
+        // 載入投資組合
+        async function loadPortfolio() {
+            const updatedAt = document.getElementById('portfolioUpdatedAt');
+            const holdingCount = document.getElementById('portfolioHoldingCount');
+            const positionCount = document.getElementById('portfolioPositionCount');
+            const costBasis = document.getElementById('portfolioCostBasis');
+            const realizedPnl = document.getElementById('portfolioRealizedPnl');
+            const tableBody = document.getElementById('portfolioTableBody');
+
+            const formatNumber = (value, digits = 0) => {
+                const number = Number(value);
+                if (!Number.isFinite(number)) return '-';
+
+                return number.toLocaleString('zh-TW', {
+                    minimumFractionDigits: digits,
+                    maximumFractionDigits: digits
+                });
+            };
+
+            const formatMoney = (value) => {
+                const number = Number(value);
+                if (!Number.isFinite(number)) return '-';
+                return `NT$${formatNumber(number, 2)}`;
+            };
+
+            const escapeHtml = (value) => {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            };
+
+            try {
+                const response = await fetch('/api/portfolio');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error(data.message || '投資組合 API 回傳錯誤');
+                }
+
+                const summary = data.summary || {};
+                const positions = Array.isArray(data.positions)
+                    ? data.positions
+                    : [];
+
+                const totalCostBasis = positions.reduce((total, position) => {
+                    const value = Number(position.cost_basis);
+                    return total + (Number.isFinite(value) ? value : 0);
+                }, 0);
+
+                holdingCount.textContent = formatNumber(summary.holding_count);
+                positionCount.textContent = formatNumber(summary.position_count);
+                costBasis.textContent = formatMoney(totalCostBasis);
+                realizedPnl.textContent = formatMoney(summary.realized_pnl);
+
+                if (Number(summary.realized_pnl) > 0) {
+                    realizedPnl.style.color = '#c62828';
+                } else if (Number(summary.realized_pnl) < 0) {
+                    realizedPnl.style.color = '#2e7d32';
+                } else {
+                    realizedPnl.style.color = '';
+                }
+
+                updatedAt.textContent = data.updated_at
+                    ? `更新時間：${data.updated_at}`
+                    : '更新時間：未知';
+
+                if (positions.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6">目前尚無投資組合資料</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tableBody.innerHTML = positions.map((position) => {
+                    const quantity = Number(position.quantity || 0);
+                    const isHolding = quantity > 0;
+                    const statusText = isHolding ? '持有中' : '已清倉';
+                    const statusClass = isHolding ? 'holding' : 'watching';
+
+                    const name = position.name || position.stock_name || '-';
+                    const symbol = position.id || position.symbol ||
+                        position.stock_id || '-';
+                    const purchasePrice = position.purchase_price;
+                    const positionCost = position.cost_basis;
+
+                    return `
+                        <tr>
+                            <td>
+                                <span class="portfolio-status ${statusClass}">
+                                    ${statusText}
+                                </span>
+                            </td>
+                            <td>${escapeHtml(name)}</td>
+                            <td>${escapeHtml(symbol)}</td>
+                            <td>${formatNumber(quantity)}</td>
+                            <td>${formatMoney(purchasePrice)}</td>
+                            <td>${formatMoney(positionCost)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('載入投資組合失敗：', error);
+
+                holdingCount.textContent = '-';
+                positionCount.textContent = '-';
+                costBasis.textContent = '-';
+                realizedPnl.textContent = '-';
+                updatedAt.textContent = '投資組合資料載入失敗';
+
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            無法載入投資組合：${escapeHtml(error.message)}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
         // 載入分析結果
         async function loadAnalysis() {
             try {
@@ -801,6 +932,7 @@
                 if (data.status === 'success') {
                     await loadAnalysis();
                     await loadStats();
+                    await loadPortfolio();
                 } else {
                     showError('分析失敗: ' + data.message);
                 }
@@ -816,6 +948,7 @@
         async function refreshData() {
             await loadAnalysis();
             await loadStats();
+            await loadPortfolio();
         }
         
         // 顯示錯誤信息
@@ -828,6 +961,7 @@
         window.addEventListener('load', () => {
             loadAnalysis();
             loadStats();
+            loadPortfolio();
         });
     </script>
 </body>
