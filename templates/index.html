@@ -376,6 +376,94 @@
                 grid-template-columns: 1fr;
             }
         }
+    
+        /* 投資組合區塊 */
+        .portfolio-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .portfolio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .portfolio-header h2 {
+            color: #333;
+            margin: 0;
+        }
+
+        .portfolio-updated {
+            color: #666;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .portfolio-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .portfolio-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .portfolio-table {
+            width: 100%;
+            min-width: 700px;
+            border-collapse: collapse;
+        }
+
+        .portfolio-table th,
+        .portfolio-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .portfolio-table th {
+            color: #555;
+            background: #f7f7f7;
+            font-weight: bold;
+        }
+
+        .portfolio-table td {
+            color: #333;
+        }
+
+        .portfolio-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .portfolio-status.holding {
+            color: #155724;
+            background: #d4edda;
+        }
+
+        .portfolio-status.watching {
+            color: #856404;
+            background: #fff3cd;
+        }
+
+        @media (max-width: 768px) {
+            .portfolio-header {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -416,6 +504,60 @@
         
         <div id="errorContainer"></div>
         
+
+        <section class="portfolio-section">
+            <div class="portfolio-header">
+                <div>
+                    <h2>💼 投資組合</h2>
+                    <p class="portfolio-updated" id="portfolioUpdatedAt">
+                        尚未載入資料
+                    </p>
+                </div>
+            </div>
+
+            <div class="portfolio-summary">
+                <div class="stat-card">
+                    <h3>持有標的</h3>
+                    <div class="value" id="portfolioHoldingCount">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>總標的</h3>
+                    <div class="value" id="portfolioPositionCount">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>總成本</h3>
+                    <div class="value" id="portfolioCostBasis">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>已實現損益</h3>
+                    <div class="value" id="portfolioRealizedPnl">-</div>
+                </div>
+            </div>
+
+            <div class="portfolio-table-wrapper">
+                <table class="portfolio-table">
+                    <thead>
+                        <tr>
+                            <th>狀態</th>
+                            <th>股票</th>
+                            <th>代號</th>
+                            <th>數量</th>
+                            <th>買入均價</th>
+                            <th>成本</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portfolioTableBody">
+                        <tr>
+                            <td colspan="6">目前尚無投資組合資料</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <div class="analysis-grid" id="analysisGrid">
             <div class="empty-state">
                 <h2>📭 暫無分析數據</h2>
