@@ -7,7 +7,7 @@ from datetime import datetime
 import json
 import logging
 
-sys.path.insert(0, os.path.expanduser('~/Documents/stock_analysis_system'))
+sys.path.insert(0, os.path.expanduser('~/Documents/Finance/stock_analysis_system'))
 
 try:
     from core.analyzer import UnifiedAnalyzer
@@ -19,7 +19,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.expanduser('~/Documents/stock_analysis_system/logs/signals_closing.log')),
+        logging.FileHandler(os.path.expanduser('~/Documents/Finance/stock_analysis_system/logs/signals_closing.log')),
         logging.StreamHandler()
     ]
 )
@@ -28,7 +28,7 @@ logger = logging.getLogger('CurrentDayClosingSignalGenerator')
 class CurrentDayClosingSignalGenerator:
     def __init__(self, portfolio_file=None):
         if portfolio_file is None:
-            portfolio_file = os.path.expanduser('~/Documents/stock_analysis_system/data/portfolio.csv')
+            portfolio_file = os.path.expanduser('~/Documents/Finance/stock_analysis_system/data/portfolio.csv')
         self.portfolio_file = portfolio_file
         self.portfolio_df = pd.read_csv(portfolio_file)
         self.analyzer = UnifiedAnalyzer()
@@ -79,7 +79,7 @@ class CurrentDayClosingSignalGenerator:
         return signals_df
     
     def save_signals(self, signals_df):
-        output_dir = os.path.expanduser('~/Documents/stock_analysis_system/results')
+        output_dir = os.path.expanduser('~/Documents/Finance/stock_analysis_system/results')
         os.makedirs(output_dir, exist_ok=True)
         
         csv_file = os.path.join(output_dir, 'signals_closing.csv')

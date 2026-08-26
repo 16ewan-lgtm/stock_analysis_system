@@ -31,3 +31,7 @@ data/
 
 # Local source backups
 core/*.backup-*
+
+# Local backup directories
+backup_before_path_fix_*/
+backups/
