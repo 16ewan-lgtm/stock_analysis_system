@@ -376,6 +376,94 @@
                 grid-template-columns: 1fr;
             }
         }
+    
+        /* 投資組合區塊 */
+        .portfolio-section {
+            margin: 30px 0;
+            padding: 25px;
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .portfolio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .portfolio-header h2 {
+            color: #333;
+            margin: 0;
+        }
+
+        .portfolio-updated {
+            color: #666;
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .portfolio-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .portfolio-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .portfolio-table {
+            width: 100%;
+            min-width: 700px;
+            border-collapse: collapse;
+        }
+
+        .portfolio-table th,
+        .portfolio-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .portfolio-table th {
+            color: #555;
+            background: #f7f7f7;
+            font-weight: bold;
+        }
+
+        .portfolio-table td {
+            color: #333;
+        }
+
+        .portfolio-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .portfolio-status.holding {
+            color: #155724;
+            background: #d4edda;
+        }
+
+        .portfolio-status.watching {
+            color: #856404;
+            background: #fff3cd;
+        }
+
+        @media (max-width: 768px) {
+            .portfolio-header {
+                align-items: flex-start;
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+
     </style>
 </head>
 <body>
@@ -416,6 +504,60 @@
         
         <div id="errorContainer"></div>
         
+
+        <section class="portfolio-section">
+            <div class="portfolio-header">
+                <div>
+                    <h2>💼 投資組合</h2>
+                    <p class="portfolio-updated" id="portfolioUpdatedAt">
+                        尚未載入資料
+                    </p>
+                </div>
+            </div>
+
+            <div class="portfolio-summary">
+                <div class="stat-card">
+                    <h3>持有標的</h3>
+                    <div class="value" id="portfolioHoldingCount">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>總標的</h3>
+                    <div class="value" id="portfolioPositionCount">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>總成本</h3>
+                    <div class="value" id="portfolioCostBasis">-</div>
+                </div>
+
+                <div class="stat-card">
+                    <h3>已實現損益</h3>
+                    <div class="value" id="portfolioRealizedPnl">-</div>
+                </div>
+            </div>
+
+            <div class="portfolio-table-wrapper">
+                <table class="portfolio-table">
+                    <thead>
+                        <tr>
+                            <th>狀態</th>
+                            <th>股票</th>
+                            <th>代號</th>
+                            <th>數量</th>
+                            <th>買入均價</th>
+                            <th>成本</th>
+                        </tr>
+                    </thead>
+                    <tbody id="portfolioTableBody">
+                        <tr>
+                            <td colspan="6">目前尚無投資組合資料</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
         <div class="analysis-grid" id="analysisGrid">
             <div class="empty-state">
                 <h2>📭 暫無分析數據</h2>
@@ -540,6 +682,137 @@
             `;
         }
 
+
+        // 載入投資組合
+        async function loadPortfolio() {
+            const updatedAt = document.getElementById('portfolioUpdatedAt');
+            const holdingCount = document.getElementById('portfolioHoldingCount');
+            const positionCount = document.getElementById('portfolioPositionCount');
+            const costBasis = document.getElementById('portfolioCostBasis');
+            const realizedPnl = document.getElementById('portfolioRealizedPnl');
+            const tableBody = document.getElementById('portfolioTableBody');
+
+            const formatNumber = (value, digits = 0) => {
+                const number = Number(value);
+                if (!Number.isFinite(number)) return '-';
+
+                return number.toLocaleString('zh-TW', {
+                    minimumFractionDigits: digits,
+                    maximumFractionDigits: digits
+                });
+            };
+
+            const formatMoney = (value) => {
+                const number = Number(value);
+                if (!Number.isFinite(number)) return '-';
+                return `NT$${formatNumber(number, 2)}`;
+            };
+
+            const escapeHtml = (value) => {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            };
+
+            try {
+                const response = await fetch('/api/portfolio');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error(data.message || '投資組合 API 回傳錯誤');
+                }
+
+                const summary = data.summary || {};
+                const positions = Array.isArray(data.positions)
+                    ? data.positions
+                    : [];
+
+                const totalCostBasis = positions.reduce((total, position) => {
+                    const value = Number(position.cost_basis);
+                    return total + (Number.isFinite(value) ? value : 0);
+                }, 0);
+
+                holdingCount.textContent = formatNumber(summary.holding_count);
+                positionCount.textContent = formatNumber(summary.position_count);
+                costBasis.textContent = formatMoney(totalCostBasis);
+                realizedPnl.textContent = formatMoney(summary.realized_pnl);
+
+                if (Number(summary.realized_pnl) > 0) {
+                    realizedPnl.style.color = '#c62828';
+                } else if (Number(summary.realized_pnl) < 0) {
+                    realizedPnl.style.color = '#2e7d32';
+                } else {
+                    realizedPnl.style.color = '';
+                }
+
+                updatedAt.textContent = data.updated_at
+                    ? `更新時間：${data.updated_at}`
+                    : '更新時間：未知';
+
+                if (positions.length === 0) {
+                    tableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6">目前尚無投資組合資料</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                tableBody.innerHTML = positions.map((position) => {
+                    const quantity = Number(position.quantity || 0);
+                    const isHolding = quantity > 0;
+                    const statusText = isHolding ? '持有中' : '已清倉';
+                    const statusClass = isHolding ? 'holding' : 'watching';
+
+                    const name = position.name || position.stock_name || '-';
+                    const symbol = position.id || position.symbol ||
+                        position.stock_id || '-';
+                    const purchasePrice = position.purchase_price;
+                    const positionCost = position.cost_basis;
+
+                    return `
+                        <tr>
+                            <td>
+                                <span class="portfolio-status ${statusClass}">
+                                    ${statusText}
+                                </span>
+                            </td>
+                            <td>${escapeHtml(name)}</td>
+                            <td>${escapeHtml(symbol)}</td>
+                            <td>${formatNumber(quantity)}</td>
+                            <td>${formatMoney(purchasePrice)}</td>
+                            <td>${formatMoney(positionCost)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+            } catch (error) {
+                console.error('載入投資組合失敗：', error);
+
+                holdingCount.textContent = '-';
+                positionCount.textContent = '-';
+                costBasis.textContent = '-';
+                realizedPnl.textContent = '-';
+                updatedAt.textContent = '投資組合資料載入失敗';
+
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            無法載入投資組合：${escapeHtml(error.message)}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
         // 載入分析結果
         async function loadAnalysis() {
             try {
@@ -659,6 +932,7 @@
                 if (data.status === 'success') {
                     await loadAnalysis();
                     await loadStats();
+                    await loadPortfolio();
                 } else {
                     showError('分析失敗: ' + data.message);
                 }
@@ -674,6 +948,7 @@
         async function refreshData() {
             await loadAnalysis();
             await loadStats();
+            await loadPortfolio();
         }
         
         // 顯示錯誤信息
@@ -686,6 +961,7 @@
         window.addEventListener('load', () => {
             loadAnalysis();
             loadStats();
+            loadPortfolio();
         });
     </script>
 </body>

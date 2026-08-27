@@ -13,7 +13,7 @@ import json
 import logging
 
 # 添加 stock_analysis_system 到路徑
-sys.path.insert(0, os.path.expanduser('~/Documents/stock_analysis_system'))
+sys.path.insert(0, os.path.expanduser('~/Documents/Finance/stock_analysis_system'))
 
 # 導入現有系統的模組
 try:
@@ -29,7 +29,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.expanduser('~/Documents/stock_analysis_system/logs/signals_previous_day.log')),
+        logging.FileHandler(os.path.expanduser('~/Documents/Finance/stock_analysis_system/logs/signals_previous_day.log')),
         logging.StreamHandler()
     ]
 )
@@ -41,7 +41,7 @@ class PreviousDaySignalGenerator:
     
     def __init__(self, portfolio_file: str = None):
         if portfolio_file is None:
-            portfolio_file = os.path.expanduser('~/Documents/stock_analysis_system/data/portfolio.csv')
+            portfolio_file = os.path.expanduser('~/Documents/Finance/stock_analysis_system/data/portfolio.csv')
         
         self.portfolio_file = portfolio_file
         self.portfolio_df = pd.read_csv(portfolio_file)
@@ -113,7 +113,7 @@ class PreviousDaySignalGenerator:
     
     def save_signals(self, signals_df: pd.DataFrame):
         """保存信號到 CSV 和 JSON"""
-        output_dir = os.path.expanduser('~/Documents/stock_analysis_system/results')
+        output_dir = os.path.expanduser('~/Documents/Finance/stock_analysis_system/results')
         
         # 保存 CSV
         csv_file = os.path.join(output_dir, 'signals_previous_day.csv')

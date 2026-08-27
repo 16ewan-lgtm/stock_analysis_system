@@ -14,7 +14,7 @@ import logging
 import yfinance as yf
 
 # 添加 stock_analysis_system 到路徑
-sys.path.insert(0, os.path.expanduser('~/Documents/stock_analysis_system'))
+sys.path.insert(0, os.path.expanduser('~/Documents/Finance/stock_analysis_system'))
 
 try:
     from core.analyzer import UnifiedAnalyzer
@@ -28,7 +28,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.expanduser('~/Documents/stock_analysis_system/logs/signals_current_day.log')),
+        logging.FileHandler(os.path.expanduser('~/Documents/Finance/stock_analysis_system/logs/signals_current_day.log')),
         logging.StreamHandler()
     ]
 )
@@ -40,7 +40,7 @@ class CurrentDayVerificationSignal:
     
     def __init__(self, previous_signals_file: str = None):
         if previous_signals_file is None:
-            previous_signals_file = os.path.expanduser('~/Documents/stock_analysis_system/results/signals_previous_day.csv')
+            previous_signals_file = os.path.expanduser('~/Documents/Finance/stock_analysis_system/results/signals_previous_day.csv')
         
         self.previous_signals_file = previous_signals_file
         self.analyzer = UnifiedAnalyzer()
@@ -149,7 +149,7 @@ class CurrentDayVerificationSignal:
     
     def save_verified_signals(self, verified_df: pd.DataFrame):
         """保存驗證信號"""
-        output_dir = os.path.expanduser('~/Documents/stock_analysis_system/results')
+        output_dir = os.path.expanduser('~/Documents/Finance/stock_analysis_system/results')
         
         # 保存 CSV
         csv_file = os.path.join(output_dir, 'signals_current_day.csv')

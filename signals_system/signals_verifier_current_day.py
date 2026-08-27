@@ -8,7 +8,7 @@ import json
 import logging
 import yfinance as yf
 
-sys.path.insert(0, os.path.expanduser('~/Documents/stock_analysis_system'))
+sys.path.insert(0, os.path.expanduser('~/Documents/Finance/stock_analysis_system'))
 
 try:
     from core.analyzer import UnifiedAnalyzer
@@ -21,7 +21,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(os.path.expanduser('~/Documents/stock_analysis_system/logs/signals_current_day.log')),
+        logging.FileHandler(os.path.expanduser('~/Documents/Finance/stock_analysis_system/logs/signals_current_day.log')),
         logging.StreamHandler()
     ]
 )
@@ -30,7 +30,7 @@ logger = logging.getLogger('CurrentDayVerificationSignal')
 class CurrentDayVerificationSignal:
     def __init__(self, previous_signals_file=None):
         if previous_signals_file is None:
-            previous_signals_file = os.path.expanduser('~/Documents/stock_analysis_system/results/signals_previous_day.csv')
+            previous_signals_file = os.path.expanduser('~/Documents/Finance/stock_analysis_system/results/signals_previous_day.csv')
         self.previous_signals_file = previous_signals_file
         self.analyzer = UnifiedAnalyzer()
         self.data_processor = DataProcessor()
@@ -105,7 +105,7 @@ class CurrentDayVerificationSignal:
         return verified_df
     
     def save_verified_signals(self, verified_df):
-        output_dir = os.path.expanduser('~/Documents/stock_analysis_system/results')
+        output_dir = os.path.expanduser('~/Documents/Finance/stock_analysis_system/results')
         os.makedirs(output_dir, exist_ok=True)
         
         csv_file = os.path.join(output_dir, 'signals_current_day.csv')
